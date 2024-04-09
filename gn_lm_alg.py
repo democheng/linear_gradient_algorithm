@@ -30,21 +30,6 @@ def JfMatrix(x1, x2, x3):
                     [10.0*x1, 3.0, 0.0]
                     ])
 
-def GNupdateParam(x_vec0, cur_error):
-    ratio = 1000.0
-    J0 = JfMatrix(x_vec0[0,0], x_vec0[1,0], x_vec0[2,0])
-    H0 = (J0.transpose() @ J0 + ratio * np.identity(3))
-    
-    dx = -np.linalg.pinv(H0) @ J0.transpose() @ cur_error
-    dx_norm = np.linalg.norm(dx)
-    x_vec1 = x_vec0 + dx
-    print('dx_norm = ', dx_norm)
-    print('H0 = ', H0)
-    print('dx = ', dx)
-    if dx_norm < 1e-6:
-        return x_vec1.reshape(-1, 1), False
-    return x_vec1.reshape(-1, 1), True
-
 def testGlGradient():
     x1 = 0.0
     x2 = 0.0 
@@ -68,13 +53,26 @@ def testGlGradient():
         if cur_error_norm < 1e-8:
             print('cur_error is too small, break ...')
             break
-        x_vec_opted, is_ok = GNupdateParam(x_vec_opted, cur_error)
+        
+        J0 = JfMatrix(x_vec_opted[0,0], x_vec_opted[1,0], x_vec_opted[2,0])
+        # ratio = 1000.0
+        # H0 = (J0.transpose() @ J0 + ratio * np.identity(3))
+        H0 = J0.transpose() @ J0
+        
+        dx = -np.linalg.pinv(H0) @ J0.transpose() @ cur_error
+        dx_norm = np.linalg.norm(dx)
+        x_vec_opted = x_vec_opted + dx
+        print('dx_norm = ', dx_norm)
+        print('H0 = ', H0)
+        print('dx = ', dx)
+        if dx_norm < 1e-6:
+            print('dx did not update, break ...')
+            break
+        
         if count % 1 == 0:
             print('count = ', count, ' , cur_error_norm = ', cur_error_norm)
             print('count = ', count, ' , x_vec_opted = ', x_vec_opted[0,0], x_vec_opted[1,0], x_vec_opted[2,0])
-        if not is_ok:
-            print('dx did not update, break ...')
-            break
+
         count = count + 1
         if count > 10000:
             print('count reaches max, break ...')
