@@ -1,1 +1,1 @@
-Personal Implementation and Experiment on Optimization Algorithms.
+Personal Implementation and Experiment on gradient based Optimization Algorithms.
