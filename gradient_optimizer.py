@@ -148,16 +148,7 @@ class LMGradientOptimizer(object):
         self.m_params_opted = self.n1np_to_list(cur_params)
         return count_list, error_list
 
-def test_function(params, input):
-    # y0 = a3 * x2^3 + a2 * x1^2 + a1 * x0 + a0
-    # y1 = a3 * x2 + a2 * x1 + a1 * x0 + a0^2
-    assert len(params) == 4
-    assert len(input) == 3
-    y0 = params[3] * math.pow(input[2],3) + params[2] * math.pow(input[1],2) + params[1] * input[0] + params[0]
-    y1 = params[3] * input[2] + params[2] * input[1] + params[1] * input[0] + math.pow(params[0],2)
-    return [y0,y1]
-
-def test_objective_function(params, input, output):
+def test_objective_function(params, input, output, return_np=True):
     # y0 = a3 * x2^3 + a2 * x1^2 + a1 * x0 + a0
     # y1 = a3 * x2 + a2 * x1 + a1 * x0 + a0^2
     assert len(params) == 4
@@ -166,7 +157,9 @@ def test_objective_function(params, input, output):
     y0 = params[3] * math.pow(input[2],3) + params[2] * math.pow(input[1],2) + params[1] * input[0] + params[0]
     y1 = params[3] * input[2] + params[2] * input[1] + params[1] * input[0] + math.pow(params[0],2)
     residual = [y0 - output[0], y1 - output[1]]
-    return np.array(residual).reshape(-1,1)
+    if return_np:
+        return np.array(residual).reshape(-1,1)
+    return residual
 
 def test_jacobian(params, input):
     #     a0    a1    a2    a3         
@@ -179,7 +172,6 @@ def test_jacobian(params, input):
                     [2*params[0], input[0], input[1]            , input[2]]
                     ])
 
-
 def test_gradient_optimize():
     params_gt = [2.0, -2.0, 2.0, 2.0]
     rand_num = 100
@@ -190,7 +182,7 @@ def test_gradient_optimize():
         x1 = random.uniform(1, 10)
         x2 = random.uniform(1, 10)
         input_list.append([x0,x1,x2])
-        output_list.append(test_function(params_gt, [x0,x1,x2]))
+        output_list.append(test_objective_function(params_gt, [x0,x1,x2], [0, 0], False))
 
     params_init = [1.0, 1.0, 10.0, 100.0]
     lm_opter = LMGradientOptimizer(params_init)
