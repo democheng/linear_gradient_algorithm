@@ -6,8 +6,10 @@ class NeuralNetwork(object):
                 activate_func, jacobian_of_activate_func, \
                 cost_func, jacobian_of_cost_func) -> None:
         self.m_node_list = node_list
-        self.m_weight_list = [np.random.randn(num_from,num_to) for num_from,num_to in zip(node_list[:-1], node_list[1:])]
-        self.m_bias_list = [np.random.randn(num_to,1) for num_to in node_list[1:]]
+        # self.m_weight_list = [np.random.randn(num_from,num_to) for num_from,num_to in zip(node_list[:-1], node_list[1:])]
+        # self.m_bias_list = [np.random.randn(num_to,1) for num_to in node_list[1:]]
+        self.m_weight_list = [np.random.uniform(-1,0,(num_from,num_to))+1 for num_from,num_to in zip(node_list[:-1], node_list[1:])]
+        self.m_bias_list = [np.random.uniform(-1,0,(num_to,1))+1 for num_to in node_list[1:]]
         # print('self.m_weight_list:', self.m_weight_list)
         # print('self.m_bias_list:', self.m_bias_list)
         self.m_activate_func = activate_func
@@ -16,11 +18,14 @@ class NeuralNetwork(object):
         self.m_jacobian_of_cost_func = jacobian_of_cost_func
     
     def resetParameters(self):
+        # for idx in range(len(self.m_weight_list)):
+        #     self.m_weight_list[idx] = np.random.randn(self.m_weight_list[idx].shape[0],self.m_weight_list[idx].shape[1])
+        # for idx in range(len(self.m_bias_list)):
+        #     self.m_bias_list[idx] = np.random.randn(self.m_bias_list[idx].shape[0],self.m_bias_list[idx].shape[1])
         for idx in range(len(self.m_weight_list)):
-            self.m_weight_list[idx] = np.random.randn(self.m_weight_list[idx].shape[0],self.m_weight_list[idx].shape[1])
+            self.m_weight_list[idx] = 1+np.random.uniform(-1,0,(self.m_weight_list[idx].shape[0],self.m_weight_list[idx].shape[1]))
         for idx in range(len(self.m_bias_list)):
-            self.m_bias_list[idx] = np.random.randn(self.m_bias_list[idx].shape[0],self.m_bias_list[idx].shape[1])
-    
+            self.m_bias_list[idx] = 1+np.random.uniform(-1,0,(self.m_bias_list[idx].shape[0],self.m_bias_list[idx].shape[1]))
     def feedforward(self,a):
         for w,b in zip(self.m_weight_list, self.m_bias_list):
             a = self.m_activate_func(w.transpose() @ a + b)
@@ -100,12 +105,19 @@ def sigmoidFunc(z):
 def jacobianOfSigmoidFunc(z):
     return sigmoidFunc(z) * (1.0 - sigmoidFunc(z))
 
+def ReLU(z):
+    return (np.abs(z) + z) * 0.5
+
+def jacobianOfReLU(z):
+    return np.where(z > 0, 1, 0)
+
 def jacobianOfQuadraticCostFunc(y_nn, y):
     return y_nn - y
 
 
 if __name__ == '__main__':
-    nn = NeuralNetwork([10,20,40,80,40,20,10], sigmoidFunc, jacobianOfSigmoidFunc, None, jacobianOfQuadraticCostFunc)
+    # nn = NeuralNetwork([10,20,40,80,40,20,10], sigmoidFunc, jacobianOfSigmoidFunc, None, jacobianOfQuadraticCostFunc)
+    nn = NeuralNetwork([10,4,2], ReLU, jacobianOfReLU, None, jacobianOfQuadraticCostFunc)
     count = 1000
     all_data_list = []
     for idx in range(count):
