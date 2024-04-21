@@ -110,23 +110,18 @@ if __name__ == '__main__':
     all_data_list = []
     for idx in range(count):
         input = np.random.randn(10,1)
-        # print('input: ', input)
         output = nn.feedforward(input)
         all_data_list.append((input, output))
-    training_list = all_data_list[0:50]
-    test_list1 = all_data_list[50:75]
-    test_list2 = all_data_list[75:100]
-
+    training_list = all_data_list[0:75]
+    test_list = all_data_list[75:100]
     # gt evalute
     gt_output = nn.evaluate(training_list)
     # init evalute
     nn.resetParameters()
     before_training_output = nn.evaluate(training_list)
     # training
-    nn.SGD(training_list, 10000, int(count*0.1), 0.01, test_list1)
+    nn.SGD(training_list, 10000, int(count*0.1), 0.01, test_list)
     output = nn.evaluate(training_list)
-    output2 = nn.evaluate(test_list2)
     print('gt_output: ', gt_output)
     print('before_training_output: ', before_training_output, ', size:', len(training_list))
     print('after training output: ', output, ', size:', len(training_list))
-    print('after training output2: ', output2, ', size:', len(test_list2))
