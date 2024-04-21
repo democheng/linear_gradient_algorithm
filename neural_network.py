@@ -8,8 +8,8 @@ class NeuralNetwork(object):
         self.m_node_list = node_list
         # self.m_weight_list = [np.random.randn(num_from,num_to) for num_from,num_to in zip(node_list[:-1], node_list[1:])]
         # self.m_bias_list = [np.random.randn(num_to,1) for num_to in node_list[1:]]
-        self.m_weight_list = [np.random.uniform(-1,0,(num_from,num_to))+1 for num_from,num_to in zip(node_list[:-1], node_list[1:])]
-        self.m_bias_list = [np.random.uniform(-1,0,(num_to,1))+1 for num_to in node_list[1:]]
+        self.m_weight_list = [np.random.uniform(-2,0,(num_from,num_to))+1 for num_from,num_to in zip(node_list[:-1], node_list[1:])]
+        self.m_bias_list = [np.random.uniform(-2,0,(num_to,1))+1 for num_to in node_list[1:]]
         # print('self.m_weight_list:', self.m_weight_list)
         # print('self.m_bias_list:', self.m_bias_list)
         self.m_activate_func = activate_func
@@ -23,9 +23,9 @@ class NeuralNetwork(object):
         # for idx in range(len(self.m_bias_list)):
         #     self.m_bias_list[idx] = np.random.randn(self.m_bias_list[idx].shape[0],self.m_bias_list[idx].shape[1])
         for idx in range(len(self.m_weight_list)):
-            self.m_weight_list[idx] = 1+np.random.uniform(-1,0,(self.m_weight_list[idx].shape[0],self.m_weight_list[idx].shape[1]))
+            self.m_weight_list[idx] = 1+np.random.uniform(-2,0,(self.m_weight_list[idx].shape[0],self.m_weight_list[idx].shape[1]))
         for idx in range(len(self.m_bias_list)):
-            self.m_bias_list[idx] = 1+np.random.uniform(-1,0,(self.m_bias_list[idx].shape[0],self.m_bias_list[idx].shape[1]))
+            self.m_bias_list[idx] = 1+np.random.uniform(-2,0,(self.m_bias_list[idx].shape[0],self.m_bias_list[idx].shape[1]))
     def feedforward(self,a):
         for w,b in zip(self.m_weight_list, self.m_bias_list):
             a = self.m_activate_func(w.transpose() @ a + b)
@@ -88,12 +88,13 @@ class NeuralNetwork(object):
         self.m_bias_list = [b - nb / len(mini_bach) * learning_rate  for b, nb in zip(self.m_bias_list, nabla_b)]
     
     def SGD(self, training_data, epochs, mini_bach_size, learning_rate, test_data=None):
+        print_count = int(0.05*epochs)
         for idx in range(epochs):
             random.shuffle(training_data)
             mini_baches = [training_data[k:k+mini_bach_size] for k in range(0,len(training_data),mini_bach_size)]
             for mini_bach in mini_baches:
                 self.updateParameters(mini_bach,learning_rate)
-            if idx % 100 == 0:
+            if idx % print_count == 0:
                 if test_data:
                     print("epoch {0}: {1}, size:{2}".format(idx, self.evaluate(test_data), len(test_data)))
                 else:
@@ -116,23 +117,32 @@ def jacobianOfQuadraticCostFunc(y_nn, y):
 
 
 if __name__ == '__main__':
-    # nn = NeuralNetwork([10,20,40,80,40,20,10], sigmoidFunc, jacobianOfSigmoidFunc, None, jacobianOfQuadraticCostFunc)
-    nn = NeuralNetwork([10,4,2], ReLU, jacobianOfReLU, None, jacobianOfQuadraticCostFunc)
-    count = 1000
+    # node_list = [4,16,32,16,4]
+    # node_list = [16,8,4,2]
+    # node_list = [16,8,4]
+    # node_list = [16,32,64,128,64,32,16]
+    node_list = [16,32,64,32,16]
+    # node_list = [16,32,16]
+    train_count = 5000
+    # nn = NeuralNetwork(node_list, sigmoidFunc, jacobianOfSigmoidFunc, None, jacobianOfQuadraticCostFunc)
+    # nn = NeuralNetwork(node_list, ReLU, jacobianOfReLU, None, jacobianOfQuadraticCostFunc)
+    nn = NeuralNetwork(node_list, sigmoidFunc, jacobianOfSigmoidFunc, None, jacobianOfQuadraticCostFunc)
+    count = 100
+    half_count = int(count*0.5)
     all_data_list = []
     for idx in range(count):
-        input = np.random.randn(10,1)
+        input = np.random.uniform(-2,0,(node_list[0],1))+1
         output = nn.feedforward(input)
         all_data_list.append((input, output))
-    training_list = all_data_list[0:75]
-    test_list = all_data_list[75:100]
+    training_list = all_data_list[0:half_count]
+    test_list = all_data_list[half_count:count]
     # gt evalute
     gt_output = nn.evaluate(training_list)
     # init evalute
     nn.resetParameters()
     before_training_output = nn.evaluate(training_list)
     # training
-    nn.SGD(training_list, 10000, int(count*0.1), 0.01, test_list)
+    nn.SGD(training_list, train_count, int(count*0.1), 0.01, test_list)
     output = nn.evaluate(training_list)
     print('gt_output: ', gt_output)
     print('before_training_output: ', before_training_output, ', size:', len(training_list))
