@@ -39,7 +39,7 @@ class ExtendedKalmanFilter(object):
     def updateStep(self, z_cur):
         Jhx = self.m_Jh(self.m_x)
         S = Jhx @ self.m_P @ Jhx.transpose() + self.m_R
-        K = self.m_P @ Jhx @ np.linalg.inv(S)
+        K = self.m_P @ Jhx.transpose() @ np.linalg.inv(S)
 
         self.m_x = self.m_x + K @ (z_cur  - self.m_h(self.m_x))
         self.m_P = (self.m_x_I - K @ Jhx) @ self.m_P
