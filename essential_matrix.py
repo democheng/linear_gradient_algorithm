@@ -1,6 +1,45 @@
 import numpy as np
 
 from center_normalize_pts import CenterAndNormalizeImagePoints
+from pose import CrossProductMatrix, CheckCheirality
+
+def decomposeEssentialMatrix(E_mat):
+    u,d,v = np.linalg.svd(E_mat) # numpy的特性,v已经是v^T了
+    if np.linalg.det(u) < 0:
+        u *= -1
+    if np.linalg.det(v) < 0:
+        v *= -1
+    
+    w = np.array([[0, 1, 0],\
+                  [-1, 0, 0],\
+                [0, 0, 1]])
+    
+    R1 = u @ w @ v
+    R2 = u @ w.transpose() @ v
+    t = u[:,2] / np.linalg.norm(u[:,2])
+    return R1, R2, t
+
+def poseFromEssentialMatrix(E_mat, pts1, pts2):
+    R1, R2, t = decomposeEssentialMatrix(E_mat)
+    # 有四种可能
+    R_list = [R1, R2, R1, R2]
+    # print('R1:', R1)
+    # print('R2:', R2)
+    t_list = [t, t, t*(-1), t*(-1)]
+    # 尝试四种可能,只有一个合理
+    pts3D_best = []
+    R_best = None
+    t_best = None
+    for i in range(4):
+        ret, pts3D = CheckCheirality(R_list[i], t_list[i], pts1, pts2)
+        if len(pts3D) >= len(pts3D_best):
+            pts3D_best = pts3D
+            R_best = R_list[i]
+            t_best = t_list[i]
+    return R_best, t_best, pts3D_best
+
+def EssentialMatrixFromPose(R, t):
+    return CrossProductMatrix(t) @ R
 
 def estimateEssentialMatrix(pta, ptb):
     '''
@@ -57,10 +96,74 @@ def testEstimateEssentialMatrix():
     print(E)
     print(np.allclose(E, E_gt))
     return
+
+def testEssentialMatrixFromPose():
+    R = np.eye(3)
+    t = np.array([0,0,1])
+    E = EssentialMatrixFromPose(R, t)
+    E_gt = np.array([[0,-1,0],\
+                     [1,0,0],\
+                    [0,0,0]])
+    print(E)
+    print(np.allclose(E, E_gt))
+
+    R = np.eye(3)
+    t = np.array([0,0,2])
+    E = EssentialMatrixFromPose(R, t)
+    E_gt = np.array([[0,-2,0],\
+                     [2,0,0],\
+                    [0,0,0]])
+    print(E)
+    print(np.allclose(E, E_gt))
+    return
+
+def testPoseFromEssentialMatrix():
+    R = np.eye(3)
+    t = np.array([1,0,0])
+    t = t / np.linalg.norm(t)
+    E = EssentialMatrixFromPose(R, t)
+
+    proj_mat1 = np.zeros((3,4))
+    proj_mat1[0,0] = 1
+    proj_mat1[1,1] = 1
+    proj_mat1[2,2] = 1
+    proj_mat2 = np.zeros((3,4))
+    proj_mat2[0:3,0:3] = R
+    proj_mat2[0,3] = t[0]
+    proj_mat2[1,3] = t[1]
+    proj_mat2[2,3] = t[2]
+
+    pts3D = np.array([[0,0,1], [0,0.1,1], [0.5,0.3,1],\
+                    [0.1,0,1], [0.1,0.1,1], [0.3,0.5,1]])
+    pts3D = pts3D.transpose()
+
+    pts3D_homogeneous = np.vstack((pts3D, [1]*pts3D.shape[1]))
+    # print(pts3D_homogeneous)
+
+    pts2d1 = []
+    pts2d2 = []
+    for i in range(pts3D_homogeneous.shape[1]):
+        pt2d1 = proj_mat1 @ pts3D_homogeneous[:,i]
+        pt2d2 = proj_mat2 @ pts3D_homogeneous[:,i]
+        pt2d1 = pt2d1 / pt2d1[-1]
+        pt2d2 = pt2d2 / pt2d2[-1]
+        pts2d1.append(pt2d1[0:2])
+        pts2d2.append(pt2d2[0:2])
+    pts2d1 = np.array(pts2d1)
+    pts2d1 = pts2d1.transpose()
+    pts2d2 = np.array(pts2d2)
+    pts2d2 = pts2d2.transpose()
+
+    R_best, t_best, pts3D_best = poseFromEssentialMatrix(E, pts2d1, pts2d2)
+    print(len(pts3D_best))
+    print(np.allclose(R_best, R))
+    print(np.allclose(t_best, t))
     return
 
 def main():
-    testEstimateEssentialMatrix()
+    # testEstimateEssentialMatrix()
+    # testEssentialMatrixFromPose()
+    testPoseFromEssentialMatrix()
     pass
 
 if __name__ == "__main__":
